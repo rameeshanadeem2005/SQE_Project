@@ -2,16 +2,21 @@ pipeline {
     agent any
 
     environment {
-        // Adjust NODE_HOME to your Node.js installation path on Jenkins machine
-        NODE_HOME = "C:\\Program Files\\nodejs"
-        PATH = "C:\\Program Files\\nodejs"
+        // Update PATH to include Node.js if needed
+        PATH = "${tool 'NodeJS-24.11.1'}/bin:${env.PATH}"
     }
 
     stages {
+        stage('Checkout SCM') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Install Backend Dependencies') {
             steps {
-                echo 'Installing backend dependencies...'
-                dir('backend') {    // go to backend folder
+                dir('backend') {
+                    echo "Installing backend dependencies..."
                     bat 'npm install'
                 }
             }
@@ -19,18 +24,17 @@ pipeline {
 
         stage('Test Backend') {
             steps {
-                echo 'Running backend tests...'
                 dir('backend') {
-                    // Replace with your test command if you have tests
-                    bat 'npm test || echo "No tests found"'
+                    echo "Running backend tests..."
+                    bat 'npm test || echo "No tests configured yet"'
                 }
             }
         }
 
         stage('Build Frontend') {
             steps {
-                echo 'Installing frontend dependencies and building...'
-                dir('frontend') {   // go to frontend folder
+                dir('frontend') {
+                    echo "Installing frontend dependencies and building..."
                     bat 'npm install'
                     bat 'npm run build || echo "No build script found"'
                 }
@@ -39,32 +43,36 @@ pipeline {
 
         stage('Prepare Deployment') {
             steps {
-                echo 'Preparing project for deployment...'
-                // Optional: copy frontend build to backend/public or package as needed
-                dir('backend') {
-                    bat 'xcopy /s /y ..\\frontend\\build ..\\backend\\public\\'
+                echo "Copying frontend build to backend public folder..."
+                script {
+                    if (isUnix()) {
+                        // For Linux/Mac agents
+                        sh 'cp -r ../frontend/dist/* ../backend/public/'
+                    } else {
+                        // For Windows agents
+                        bat 'robocopy ..\\frontend\\dist ..\\backend\\public /E /NFL /NDL /NJH /NJS /NC /NS /NP'
+                    }
                 }
             }
         }
 
         stage('Deploy') {
             steps {
-                echo 'Deploying project...'
-                // Example: run backend server or Docker build
-                // bat 'node server.js'   <-- only if you want Jenkins to run it
+                echo "Deployment steps here..."
+                // Add your deployment commands
             }
         }
     }
 
     post {
         always {
-            echo 'Pipeline finished.'
+            echo "Pipeline finished."
         }
         success {
-            echo 'Build and deployment stages completed successfully.'
+            echo "Pipeline succeeded!"
         }
         failure {
-            echo 'Pipeline failed. Check logs for details.'
+            echo "Pipeline failed. Check logs."
         }
     }
 }
