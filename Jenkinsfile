@@ -4,7 +4,7 @@ pipeline {
     environment {
         // Adjust NODE_HOME to your Node.js installation path on Jenkins machine
         NODE_HOME = "C:\\Program Files\\nodejs"
-        PATH = "C:\Program Files\nodejs"
+        PATH = "C:\\Program Files\\nodejs"
     }
 
     stages {
