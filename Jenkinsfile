@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         // Update PATH to include Node.js if needed
-        PATH = "${tool 'NodeJS-24.11.1'}/bin:${env.PATH}"
+        PATH = "C:\Program Files\nodejs"
     }
 
     stages {
