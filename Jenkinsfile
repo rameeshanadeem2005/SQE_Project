@@ -3,7 +3,8 @@ pipeline {
 
     environment {
         // Update PATH to include Node.js if needed
-        PATH = "C:\\Program Files\\nodejs"
+        PATH = "C:\\Program Files\\nodejs;${env.PATH}"
+
     }
 
     stages {
@@ -41,20 +42,20 @@ pipeline {
             }
         }
 
-        stage('Prepare Deployment') {
-            steps {
-                echo "Copying frontend build to backend public folder..."
-                script {
-                    if (isUnix()) {
-                        // For Linux/Mac agents
-                        sh 'cp -r ../frontend/dist/* ../backend/public/'
-                    } else {
-                        // For Windows agents
-                        bat 'robocopy ..\\frontend\\dist ..\\backend\\public /E /NFL /NDL /NJH /NJS /NC /NS /NP'
-                    }
-                }
-            }
-        }
+        // stage('Prepare Deployment') {
+        //     steps {
+        //         echo "Copying frontend build to backend public folder..."
+        //         script {
+        //             if (isUnix()) {
+        //                 // For Linux/Mac agents
+        //                 sh 'cp -r ../frontend/dist/* ../backend/public/'
+        //             } else {
+        //                 // For Windows agents
+        //                 bat 'robocopy ..\\frontend\\dist ..\\backend\\public /E /NFL /NDL /NJH /NJS /NC /NS /NP'
+        //             }
+        //         }
+        //     }
+        // }
 
         stage('Deploy') {
             steps {
