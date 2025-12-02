@@ -82,3 +82,18 @@ stage('Prepare Deployment') {
         }
     }
 }
+stage('Test Backend') {
+    steps {
+        dir('backend') {
+            bat 'npm test'
+        }
+    }
+}
+
+stage('Test Frontend UI') {
+    steps {
+        dir('frontend') {
+            bat 'npm test'
+        }
+    }
+}
