@@ -2,12 +2,11 @@ pipeline {
     agent any
 
     environment {
-        // Update PATH to include Node.js if needed
         PATH = "C:\\Program Files\\nodejs;${env.PATH}"
-
     }
 
     stages {
+
         stage('Checkout SCM') {
             steps {
                 checkout scm
@@ -27,7 +26,7 @@ pipeline {
             steps {
                 dir('backend') {
                     echo "Running backend tests..."
-                    bat 'npm test || echo "No tests configured yet"'
+                    bat 'npm test'
                 }
             }
         }
@@ -42,30 +41,27 @@ pipeline {
             }
         }
 
-stage('Prepare Deployment') {
-    steps {
-        echo "Copying frontend build to backend public folder..."
-        script {
-            if (isUnix()) {
-                sh 'cp -r frontend/dist/* backend/public/'
-            } else {
-                dir('frontend') {
-                    bat '''
-                    if not exist ..\\backend\\public mkdir ..\\backend\\public
-                    xcopy dist\\* ..\\backend\\public /E /I /Y
-                    '''
+        stage('Prepare Deployment') {
+            steps {
+                echo "Copying frontend build to backend public folder..."
+                script {
+                    if (isUnix()) {
+                        sh 'cp -r frontend/dist/* backend/public/'
+                    } else {
+                        dir('frontend') {
+                            bat '''
+                            if not exist ..\\backend\\public mkdir ..\\backend\\public
+                            xcopy dist\\* ..\\backend\\public /E /I /Y
+                            '''
+                        }
+                    }
                 }
             }
         }
-    }
-}
-
-
 
         stage('Deploy') {
             steps {
                 echo "Deployment steps here..."
-                // Add your deployment commands
             }
         }
     }
@@ -79,21 +75,6 @@ stage('Prepare Deployment') {
         }
         failure {
             echo "Pipeline failed. Check logs."
-        }
-    }
-}
-stage('Test Backend') {
-    steps {
-        dir('backend') {
-            bat 'npm test'
-        }
-    }
-}
-
-stage('Test Frontend UI') {
-    steps {
-        dir('frontend') {
-            bat 'npm test'
         }
     }
 }

@@ -1,26 +1,22 @@
+// corePublicRouter.js
 const express = require('express');
 const router = express.Router();
-
 const path = require('path');
 const { isPathInside } = require('../../utils/is-path-inside');
 
-router.route('/:subPath/:directory/:file').get(function (req, res) {
+router.get('/:subPath/:directory/:file', (req, res) => {
   try {
     const { subPath, directory, file } = req.params;
 
-    // Decode each parameter separately
     const decodedSubPath = decodeURIComponent(subPath);
     const decodedDirectory = decodeURIComponent(directory);
     const decodedFile = decodeURIComponent(file);
 
-    // Define the trusted root directory
     const rootDir = path.join(__dirname, '../../public');
 
-    // Safely join the decoded path segments
-    const relativePath = path.join(decodedSubPath, decodedDirectory, decodedFile);
-    const absolutePath = path.join(rootDir, relativePath);
+    const absolutePath = path.join(rootDir, decodedSubPath, decodedDirectory, decodedFile);
 
-    // Check if the resulting path stays inside rootDir
+    // Path traversal protection
     if (!isPathInside(absolutePath, rootDir)) {
       return res.status(400).json({
         success: false,
@@ -28,22 +24,16 @@ router.route('/:subPath/:directory/:file').get(function (req, res) {
       });
     }
 
-    return res.sendFile(absolutePath, (error) => {
-      if (error) {
+    res.sendFile(absolutePath, (err) => {
+      if (err) {
         return res.status(404).json({
           success: false,
-          result: null,
-          message: 'we could not find : ' + file,
+          message: 'File not found: ' + file,
         });
       }
     });
-  } catch (error) {
-    return res.status(503).json({
-      success: false,
-      result: null,
-      message: error.message,
-      error: error,
-    });
+  } catch (err) {
+    res.status(503).json({ success: false, message: err.message });
   }
 });
 

@@ -1,14 +1,9 @@
+// utils/is-path-inside.js
 const path = require('path');
 
-// is implementation of is-path-inside npm package
+function isPathInside(child, parent) {
+  const relative = path.relative(parent, child);
+  return !!relative && !relative.startsWith('..') && !path.isAbsolute(relative);
+}
 
-exports.isPathInside = (childPath, parentPath) => {
-  const relation = path.relative(parentPath, childPath);
-
-  return Boolean(
-    relation &&
-      relation !== '..' &&
-      !relation.startsWith(`..${path.sep}`) &&
-      relation !== path.resolve(childPath)
-  );
-};
+module.exports = { isPathInside };
