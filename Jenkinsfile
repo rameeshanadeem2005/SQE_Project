@@ -41,14 +41,14 @@ pipeline {
             }
         }
 
-        // stage('Test Frontend') {
-        //     steps {
-        //         dir('frontend') {
-        //             echo "Running frontend tests..."
-        //             bat 'npm test'
-        //         }
-        //     }
-        // }
+        stage('Test Frontend') {
+            steps {
+                dir('frontend') {
+                    echo "Running frontend tests..."
+                    bat 'npm test'
+                }
+            }
+        }
 
         stage('Prepare Deployment') {
             steps {
