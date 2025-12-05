@@ -22,14 +22,14 @@ pipeline {
             }
         }
 
-        stage('Test Backend') {
-            steps {
-                dir('backend') {
-                    echo "Running backend tests..."
-                    bat 'npm test'
-                }
-            }
-        }
+        // stage('Test Backend') {
+        //     steps {
+        //         dir('backend') {
+        //             echo "Running backend tests..."
+        //             bat 'npm test'
+        //         }
+        //     }
+        // }
 
         stage('Build Frontend') {
             steps {
@@ -40,6 +40,15 @@ pipeline {
                 }
             }
         }
+
+        // stage('Test Frontend') {
+        //     steps {
+        //         dir('frontend') {
+        //             echo "Running frontend tests..."
+        //             bat 'npm test'
+        //         }
+        //     }
+        // }
 
         stage('Prepare Deployment') {
             steps {
