@@ -1,4 +1,4 @@
 #!/bin/bash
 pm2 stop all || true
-cd /home/ec2-user/app/backend
-pm2 start index.js --name "staging-backend"
+cd /home/ec2-user/idurar-erp-crm/backend
+pm2 start server.js --name "staging-backend"
