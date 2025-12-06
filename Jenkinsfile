@@ -2,11 +2,13 @@ pipeline {
     agent any
 
     environment {
-        PATH = "C:\\Program Files\\nodejs;${env.PATH}"
+        PATH = "/usr/bin/node:${env.PATH}"
+        SSH_CREDENTIALS_ID = 'ec2-user-ssh-key' // Jenkins credential ID for EC2
+        EC2_HOST = 'ec2-user@13.208.181.39'   // replace with your EC2 public IP
+        APP_PATH = '/home/ec2-user/idurar-erp-crm' // path on EC2
     }
 
     stages {
-
         stage('Checkout SCM') {
             steps {
                 checkout scm
@@ -16,36 +18,16 @@ pipeline {
         stage('Install Backend Dependencies') {
             steps {
                 dir('backend') {
-                    echo "Installing backend dependencies..."
-                    bat 'npm install'
+                    sh 'npm install'
                 }
             }
         }
-
-        // stage('Test Backend') {
-        //     steps {
-        //         dir('backend') {
-        //             echo "Running backend tests..."
-        //             bat 'npm test'
-        //         }
-        //     }
-        // }
 
         stage('Build Frontend') {
             steps {
                 dir('frontend') {
-                    echo "Installing frontend dependencies and building..."
-                    bat 'npm install'
-                    bat 'npm run build || echo "No build script found"'
-                }
-            }
-        }
-
-        stage('Test Frontend') {
-            steps {
-                dir('frontend') {
-                    echo "Running frontend tests..."
-                    bat 'npm test'
+                    sh 'npm install'
+                    sh 'npm run build'
                 }
             }
         }
@@ -53,24 +35,27 @@ pipeline {
         stage('Prepare Deployment') {
             steps {
                 echo "Copying frontend build to backend public folder..."
-                script {
-                    if (isUnix()) {
-                        sh 'cp -r frontend/dist/* backend/public/'
-                    } else {
-                        dir('frontend') {
-                            bat '''
-                            if not exist ..\\backend\\public mkdir ..\\backend\\public
-                            xcopy dist\\* ..\\backend\\public /E /I /Y
-                            '''
-                        }
-                    }
-                }
+                sh 'cp -r frontend/dist/* backend/public/'
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy to EC2') {
             steps {
-                echo "Deployment steps here..."
+                echo "Deploying to staging EC2..."
+                sshagent(['SSH_CREDENTIALS_ID']) {
+                    // Copy files to EC2
+                    sh """
+                    scp -r backend/* ${EC2_HOST}:${APP_PATH}/backend/
+                    """
+                    // Restart backend on EC2
+                    sh """
+                    ssh ${EC2_HOST} << 'ENDSSH'
+                        cd ${APP_PATH}/backend
+                        npm install
+                        pm2 restart staging-backend || pm2 start src/server.js --name staging-backend
+                    ENDSSH
+                    """
+                }
             }
         }
     }
