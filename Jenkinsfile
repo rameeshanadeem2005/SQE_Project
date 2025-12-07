@@ -53,12 +53,12 @@ pipeline {
                 
                 // Copy backend to EC2
                 bat """
-                pscp -i ${PRIVATE_KEY} -r backend\\* ${EC2_HOST}:${APP_PATH}/backend/
+                ssh -i ${PRIVATE_KEY} -r backend\\* ${EC2_HOST}:${APP_PATH}/backend/
                 """
 
                 // Restart backend on EC2
                 bat """
-                plink -i ${PRIVATE_KEY} ${EC2_HOST} "cd ${APP_PATH}/backend && npm install && pm2 restart staging-backend || pm2 start src/server.js --name staging-backend"
+                ssh -i ${PRIVATE_KEY} ${EC2_HOST} "cd ${APP_PATH}/backend && npm install && pm2 restart staging-backend || pm2 start src/server.js --name staging-backend"
                 """
             }
         }
