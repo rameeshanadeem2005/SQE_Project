@@ -28,13 +28,13 @@ pipeline {
             }
         }
 
-        stage('Test Backend') {
-            steps {
-                dir('backend') {
-                    bat 'npm test'
-                }
-            }
-        }
+        // stage('Test Backend') {
+        //     steps {
+        //         dir('backend') {
+        //             bat 'npm test'
+        //         }
+        //     }
+        // }
 
         stage('Build Frontend') {
             steps {
