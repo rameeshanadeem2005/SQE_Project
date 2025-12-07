@@ -2,10 +2,11 @@ pipeline {
     agent any
 
     environment {
-        PATH = "C:\\Program Files\\nodejs;${env.PATH}"
-        EC2_HOST = "ec2-user@13.208.181.39"  // your EC2 public IP
-        APP_PATH = "/home/ec2-user/idurar-erp-crm" // EC2 app path
-        PRIVATE_KEY = "C:\\Users\\ramee\\.ssh\\ec2-key.ppk" // path to your EC2 private key
+        EC2_HOST = 'ec2-user@13.208.181.39'        // Staging EC2 host
+        APP_PATH = '/home/ec2-user/idurar-erp-crm' // Path on EC2
+        PPK_PATH = 'C:\\Users\\ramee\\.ssh\\ec2-key.ppk' // Your private key
+        PSCP_PATH = 'C:\\Program Files\\PuTTY\\pscp.exe' // Full path to pscp
+        PLINK_PATH = 'C:\\Program Files\\PuTTY\\plink.exe' // Full path to plink
     }
 
     stages {
@@ -47,19 +48,16 @@ pipeline {
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Deploy to STAGING') {
             steps {
                 echo "Deploying to STAGING environment..."
-                
-                // Copy backend to EC2
-                bat """
-                ssh -i ${PRIVATE_KEY} -r backend\\* ${EC2_HOST}:${APP_PATH}/backend/
-                """
+                script {
+                    // Copy backend files to EC2
+                    bat "\"${PSCP_PATH}\" -i \"${PPK_PATH}\" -r backend\\* ${EC2_HOST}:${APP_PATH}/backend/"
 
-                // Restart backend on EC2
-                bat """
-                ssh -i ${PRIVATE_KEY} ${EC2_HOST} "cd ${APP_PATH}/backend && npm install && pm2 restart staging-backend || pm2 start src/server.js --name staging-backend"
-                """
+                    // Restart backend on EC2 using PLINK
+                    bat "\"${PLINK_PATH}\" -i \"${PPK_PATH}\" ${EC2_HOST} \"cd ${APP_PATH}/backend && npm install && pm2 restart staging-backend || pm2 start src/server.js --name staging-backend\""
+                }
             }
         }
     }
