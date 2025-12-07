@@ -23,11 +23,29 @@ pipeline {
             }
         }
 
+        stage('Test Backend') {
+            steps {
+                dir('backend') {
+                    sh 'npm install'   // ensure dependencies
+                    sh 'npm test'      // run Jest tests
+                }
+            }
+        }
+
         stage('Build Frontend') {
             steps {
                 dir('frontend') {
                     sh 'npm install'
                     sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Test Frontend') {
+            steps {
+                dir('frontend') {
+                    sh 'npm install'
+                    sh 'npm test'      // run frontend tests
                 }
             }
         }
@@ -43,10 +61,11 @@ pipeline {
             steps {
                 echo "Deploying to staging EC2..."
                 sshagent(['SSH_CREDENTIALS_ID']) {
-                    // Copy files to EC2
+                    // Copy backend and public files to EC2
                     sh """
                     scp -r backend/* ${EC2_HOST}:${APP_PATH}/backend/
                     """
+
                     // Restart backend on EC2
                     sh """
                     ssh ${EC2_HOST} << 'ENDSSH'
