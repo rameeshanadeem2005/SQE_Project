@@ -1,11 +1,16 @@
 pipeline {
     agent any
 
+    parameters {
+        choice(name: 'ENVIRONMENT', choices: ['STAGING', 'PRODUCTION'], description: 'Select the environment to deploy')
+    }
+
     environment {
         PATH = "/usr/bin/node:${env.PATH}"
+        STAGING_HOST = 'ec2-user@13.208.181.39'
+        PROD_HOST    = 'ec2-user@<PRODUCTION_EC2_IP>'
+        APP_PATH = '/home/ec2-user/idurar-erp-crm'
         SSH_CREDENTIALS_ID = 'ec2-user-ssh-key' // Jenkins credential ID for EC2
-        EC2_HOST = 'ec2-user@13.208.181.39'   // replace with your EC2 public IP
-        APP_PATH = '/home/ec2-user/idurar-erp-crm' // path on EC2
     }
 
     stages {
@@ -26,8 +31,7 @@ pipeline {
         stage('Test Backend') {
             steps {
                 dir('backend') {
-                    sh 'npm install'   // ensure dependencies
-                    sh 'npm test'      // run Jest tests
+                    sh 'npm test'
                 }
             }
         }
@@ -44,8 +48,7 @@ pipeline {
         stage('Test Frontend') {
             steps {
                 dir('frontend') {
-                    sh 'npm install'
-                    sh 'npm test'      // run frontend tests
+                    sh 'npm test'
                 }
             }
         }
@@ -57,23 +60,25 @@ pipeline {
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Deploy to Environment') {
             steps {
-                echo "Deploying to staging EC2..."
-                sshagent(['SSH_CREDENTIALS_ID']) {
-                    // Copy backend and public files to EC2
-                    sh """
-                    scp -r backend/* ${EC2_HOST}:${APP_PATH}/backend/
-                    """
+                script {
+                    def targetHost = params.ENVIRONMENT == 'STAGING' ? env.STAGING_HOST : env.PROD_HOST
+                    echo "Deploying to ${params.ENVIRONMENT} environment at ${targetHost}..."
 
-                    // Restart backend on EC2
-                    sh """
-                    ssh ${EC2_HOST} << 'ENDSSH'
-                        cd ${APP_PATH}/backend
-                        npm install
-                        pm2 restart staging-backend || pm2 start src/server.js --name staging-backend
-                    ENDSSH
-                    """
+                    sshagent([env.SSH_CREDENTIALS_ID]) {
+                        sh """
+                        # Copy backend files to EC2
+                        scp -r backend/* ${targetHost}:${APP_PATH}/backend/
+
+                        # Install dependencies and restart server
+                        ssh ${targetHost} << 'ENDSSH'
+                            cd ${APP_PATH}/backend
+                            npm install
+                            pm2 restart ${params.ENVIRONMENT}-backend || pm2 start src/server.js --name ${params.ENVIRONMENT}-backend
+                        ENDSSH
+                        """
+                    }
                 }
             }
         }
