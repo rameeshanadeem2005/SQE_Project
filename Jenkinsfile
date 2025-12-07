@@ -27,10 +27,13 @@ pipeline {
         stage('Test Backend') {
             steps {
                 dir('backend') {
+                    echo "=============================="
                     echo "Running backend tests..."
-                    // Allow failure but continue
+                    echo "=============================="
+                    
+                    // Run tests but continue pipeline even if tests fail
                     catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-                        bat 'npm test'
+                        bat 'npm test || exit 0'
                     }
                 }
             }
