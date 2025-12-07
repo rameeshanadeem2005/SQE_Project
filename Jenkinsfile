@@ -72,7 +72,7 @@ pipeline {
             echo "Pipeline succeeded!"
         }
         failure {
-            echo "Pipeline failed. Check"
+            echo "Pipeline failed. Check logs."
         }
     }
 }
