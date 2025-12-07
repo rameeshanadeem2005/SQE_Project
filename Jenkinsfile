@@ -6,11 +6,11 @@ pipeline {
     }
 
     environment {
-        PATH = "/usr/bin/node:${env.PATH}"
+        PATH = "C:\\Program Files\\nodejs;${env.PATH}"  // Node.js path on Windows
         STAGING_HOST = 'ec2-user@13.208.181.39'
         PROD_HOST    = 'ec2-user@<PRODUCTION_EC2_IP>'
         APP_PATH = '/home/ec2-user/idurar-erp-crm'
-        SSH_CREDENTIALS_ID = 'ec2-user-ssh-key' // Jenkins credential ID for EC2
+        SSH_CREDENTIALS_ID = 'ec2-user-ssh-key'
     }
 
     stages {
@@ -23,7 +23,7 @@ pipeline {
         stage('Install Backend Dependencies') {
             steps {
                 dir('backend') {
-                    sh 'npm install'
+                    bat 'npm install'
                 }
             }
         }
@@ -31,7 +31,7 @@ pipeline {
         stage('Test Backend') {
             steps {
                 dir('backend') {
-                    sh 'npm test'
+                    bat 'npm test'
                 }
             }
         }
@@ -39,8 +39,8 @@ pipeline {
         stage('Build Frontend') {
             steps {
                 dir('frontend') {
-                    sh 'npm install'
-                    sh 'npm run build'
+                    bat 'npm install'
+                    bat 'npm run build'
                 }
             }
         }
@@ -48,7 +48,7 @@ pipeline {
         stage('Test Frontend') {
             steps {
                 dir('frontend') {
-                    sh 'npm test'
+                    bat 'npm test'
                 }
             }
         }
@@ -56,7 +56,7 @@ pipeline {
         stage('Prepare Deployment') {
             steps {
                 echo "Copying frontend build to backend public folder..."
-                sh 'cp -r frontend/dist/* backend/public/'
+                bat 'xcopy /E /Y frontend\\dist\\* backend\\public\\'
             }
         }
 
@@ -67,16 +67,14 @@ pipeline {
                     echo "Deploying to ${params.ENVIRONMENT} environment at ${targetHost}..."
 
                     sshagent([env.SSH_CREDENTIALS_ID]) {
-                        sh """
-                        # Copy backend files to EC2
-                        scp -r backend/* ${targetHost}:${APP_PATH}/backend/
+                        // Copy backend files to EC2
+                        bat """
+                        pscp -r backend\\* ${targetHost}:${APP_PATH}/backend/
+                        """
 
-                        # Install dependencies and restart server
-                        ssh ${targetHost} << 'ENDSSH'
-                            cd ${APP_PATH}/backend
-                            npm install
-                            pm2 restart ${params.ENVIRONMENT}-backend || pm2 start src/server.js --name ${params.ENVIRONMENT}-backend
-                        ENDSSH
+                        // Restart backend on EC2
+                        bat """
+                        plink ${targetHost} "cd ${APP_PATH}/backend && npm install && pm2 restart ${params.ENVIRONMENT}-backend || pm2 start src/server.js --name ${params.ENVIRONMENT}-backend"
                         """
                     }
                 }
@@ -92,7 +90,7 @@ pipeline {
             echo "Pipeline succeeded!"
         }
         failure {
-            echo "Pipeline failed. Check"
+            echo "Pipeline failed. Check logs."
         }
     }
 }
