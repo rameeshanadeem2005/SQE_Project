@@ -1,16 +1,11 @@
 pipeline {
     agent any
 
-    parameters {
-        choice(name: 'ENVIRONMENT', choices: ['STAGING', 'PRODUCTION'], description: 'Select the environment to deploy')
-    }
-
     environment {
-        PATH = "C:\\Program Files\\nodejs;${env.PATH}"  // Node.js path on Windows
-        STAGING_HOST = 'ec2-user@13.208.181.39'
-        PROD_HOST    = 'ec2-user@<PRODUCTION_EC2_IP>'
-        APP_PATH = '/home/ec2-user/idurar-erp-crm'
-        SSH_CREDENTIALS_ID = 'ec2-user-ssh-key'
+        PATH = "C:\\Program Files\\nodejs;${env.PATH}"
+        EC2_HOST = "ec2-user@13.208.181.39"  // your EC2 public IP
+        APP_PATH = "/home/ec2-user/idurar-erp-crm" // EC2 app path
+        PRIVATE_KEY = "C:\\Users\\ramee\\.ssh\\ec2-key.ppk" // path to your EC2 private key
     }
 
     stages {
@@ -27,14 +22,6 @@ pipeline {
                 }
             }
         }
-
-        // stage('Test Backend') {
-        //     steps {
-        //         dir('backend') {
-        //             bat 'npm test'
-        //         }
-        //     }
-        // }
 
         stage('Build Frontend') {
             steps {
@@ -60,24 +47,19 @@ pipeline {
             }
         }
 
-        stage('Deploy to Environment') {
+        stage('Deploy to EC2') {
             steps {
-                script {
-                    def targetHost = params.ENVIRONMENT == 'STAGING' ? env.STAGING_HOST : env.PROD_HOST
-                    echo "Deploying to ${params.ENVIRONMENT} environment at ${targetHost}..."
+                echo "Deploying to STAGING environment..."
+                
+                // Copy backend to EC2
+                bat """
+                pscp -i ${PRIVATE_KEY} -r backend\\* ${EC2_HOST}:${APP_PATH}/backend/
+                """
 
-                    sshagent([env.SSH_CREDENTIALS_ID]) {
-                        // Copy backend files to EC2
-                        bat """
-                        pscp -r backend\\* ${targetHost}:${APP_PATH}/backend/
-                        """
-
-                        // Restart backend on EC2
-                        bat """
-                        plink ${targetHost} "cd ${APP_PATH}/backend && npm install && pm2 restart ${params.ENVIRONMENT}-backend || pm2 start src/server.js --name ${params.ENVIRONMENT}-backend"
-                        """
-                    }
-                }
+                // Restart backend on EC2
+                bat """
+                plink -i ${PRIVATE_KEY} ${EC2_HOST} "cd ${APP_PATH}/backend && npm install && pm2 restart staging-backend || pm2 start src/server.js --name staging-backend"
+                """
             }
         }
     }
